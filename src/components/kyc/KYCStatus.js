@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { KYC_STATUS, KYC_STATUS_NAMES } from '../../utils/constants';
-import { useWallet, useContractContext } from '../../context';
+import { useWallet } from '../../context/WalletContext';
+import { useContractContext } from '../../context/ContractContext';
 import Link from 'next/link';
 
 export default function KYCStatus({ userAddress }) {

@@ -2,258 +2,352 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useWallet, useContractContext } from '../../context';
-import FormInput from '../FormInput';
-import WalletConnectButton from '../WalletConnectButton';
+import { useWallet } from '../../context/WalletContext';
+import { useContractContext } from '../../context/ContractContext';
 import { ERROR_MESSAGES } from '../../utils/constants';
-import { isValidEmail, isValidIndianPhone, isValidAadhaar, isValidPinCode, isValidIFSC } from '../../utils/regexValidators';
+import { useContractWrite } from '../../utils/contractHelpers';
 
 export default function EmployeeRegistrationForm() {
   const router = useRouter();
   const { address, isConnected } = useWallet();
-  const { writeContract } = useContractContext();
-  
+  const { contract } = useContractContext();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    phone: '',
-    dateOfBirth: '',
-    aadhaarNumber: '',
-    addressLine1: '',
-    city: '',
-    state: '',
+    phoneNumber: '',
+    address: '',
+    documentType: 'AADHAAR',
+    documentNumber: '',
     pinCode: '',
-    branchName: '',
-    ifscCode: ''
+    ifscCode: '',
+    bankAccountNumber: '',
+    department: '',
+    position: '',
+    employeeId: ''
   });
-  
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  const handleInputChange = (e) => {
+
+  const { execute: addBankEmployee, isLoading: isAddingEmployee } = useContractWrite('addBankEmployee');
+  const { execute: submitKYC, isLoading: isSubmittingKYC } = useContractWrite('submitKYC');
+
+  const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-    
-    // Clear error when field is edited
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
     if (errors[name]) {
-      setErrors({ ...errors, [name]: '' });
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
     }
   };
-  
+
   const validateForm = () => {
     const newErrors = {};
-    
-    // Basic validations
-    if (!formData.name.trim()) newErrors.name = ERROR_MESSAGES.NAME_REQUIRED;
-    if (!isValidEmail(formData.email)) newErrors.email = ERROR_MESSAGES.EMAIL_INVALID;
-    if (!isValidIndianPhone(formData.phone)) newErrors.phone = ERROR_MESSAGES.PHONE_INVALID;
-    if (!formData.dateOfBirth) newErrors.dateOfBirth = ERROR_MESSAGES.DOB_REQUIRED;
-    if (!isValidAadhaar(formData.aadhaarNumber)) newErrors.aadhaarNumber = ERROR_MESSAGES.AADHAAR_INVALID;
-    if (!formData.addressLine1.trim()) newErrors.addressLine1 = ERROR_MESSAGES.ADDRESS_REQUIRED;
-    if (!formData.city.trim()) newErrors.city = ERROR_MESSAGES.CITY_REQUIRED;
-    if (!formData.state.trim()) newErrors.state = ERROR_MESSAGES.STATE_REQUIRED;
-    if (!isValidPinCode(formData.pinCode)) newErrors.pinCode = ERROR_MESSAGES.PIN_INVALID;
-    
-    // Employee specific validations
-    if (!formData.branchName.trim()) newErrors.branchName = ERROR_MESSAGES.BRANCH_REQUIRED;
-    if (!isValidIFSC(formData.ifscCode)) newErrors.ifscCode = ERROR_MESSAGES.IFSC_INVALID;
-    
+    if (!formData.name) newErrors.name = ERROR_MESSAGES.NAME_REQUIRED;
+    if (!formData.email) newErrors.email = ERROR_MESSAGES.EMAIL_REQUIRED;
+    if (!formData.phoneNumber) newErrors.phoneNumber = ERROR_MESSAGES.PHONE_REQUIRED;
+    if (!formData.address) newErrors.address = ERROR_MESSAGES.ADDRESS_REQUIRED;
+    if (!formData.documentNumber) newErrors.documentNumber = ERROR_MESSAGES.DOCUMENT_NUMBER_REQUIRED;
+    if (!formData.pinCode) newErrors.pinCode = ERROR_MESSAGES.PIN_CODE_REQUIRED;
+    if (!formData.ifscCode) newErrors.ifscCode = ERROR_MESSAGES.IFSC_REQUIRED;
+    if (!formData.bankAccountNumber) newErrors.bankAccountNumber = ERROR_MESSAGES.BANK_ACCOUNT_REQUIRED;
+    if (!formData.department) newErrors.department = ERROR_MESSAGES.DEPARTMENT_REQUIRED;
+    if (!formData.position) newErrors.position = ERROR_MESSAGES.POSITION_REQUIRED;
+    if (!formData.employeeId) newErrors.employeeId = ERROR_MESSAGES.EMPLOYEE_ID_REQUIRED;
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!isConnected) {
-      alert("Please connect your wallet first");
-      return;
-    }
-    
-    if (!validateForm()) {
-      return;
-    }
-    
+    if (!validateForm()) return;
+
+    setIsSubmitting(true);
     try {
-      setIsSubmitting(true);
-      
-      // Call contract to register employee
-      const { result, error } = await writeContract('addBankEmployee', [address, formData.ifscCode]);
-      
-      if (error) {
-        throw new Error(error);
+      // First, add the employee to the contract
+      const result = await addBankEmployee(address, formData.ifscCode);
+      if (result.error) {
+        throw new Error(result.error);
       }
-      
-      // Redirect to login page after successful registration
-      router.push('/login?registration=success');
-    } catch (error) {
-      console.error("Registration error:", error);
-      setErrors({ 
-        submit: "Failed to register. Please try again." 
+
+      // Then, submit KYC data
+      const kycData = JSON.stringify({
+        name: formData.name,
+        email: formData.email,
+        phoneNumber: formData.phoneNumber,
+        address: formData.address,
+        documentType: formData.documentType,
+        documentNumber: formData.documentNumber,
+        pinCode: formData.pinCode,
+        bankAccountNumber: formData.bankAccountNumber,
+        department: formData.department,
+        position: formData.position,
+        employeeId: formData.employeeId
       });
+
+      // For now, we'll use a placeholder IPFS hash
+      const ipfsHash = "QmPlaceholderHash";
+
+      const kycResult = await submitKYC(ipfsHash, formData.ifscCode);
+      if (kycResult.error) {
+        throw new Error(kycResult.error);
+      }
+
+      router.push('/dashboard/employee');
+    } catch (error) {
+      console.error('Registration error:', error);
+      setErrors(prev => ({
+        ...prev,
+        submit: error.message || ERROR_MESSAGES.REGISTRATION_FAILED
+      }));
     } finally {
       setIsSubmitting(false);
     }
   };
-  
-  return (
-    <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-      <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-        <h2 className="text-center text-2xl font-bold mb-6">Bank Employee Registration</h2>
-        
-        <div className="mb-6">
-          <p className="text-sm text-gray-600 mb-4">First, connect your wallet:</p>
-          <div className="flex justify-center">
-            <WalletConnectButton />
+
+  if (!isConnected) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-lg">
+          <div>
+            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+              Connect Your Wallet
+            </h2>
+            <p className="mt-2 text-center text-sm text-gray-600">
+              Please connect your wallet to register as an employee
+            </p>
           </div>
         </div>
-        
-        {address ? (
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <FormInput
-              id="name"
-              label="Full Name"
-              value={formData.name}
-              onChange={handleInputChange}
-              error={errors.name}
-              required
-            />
-            
-            <FormInput
-              id="email"
-              label="Email"
-              type="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              error={errors.email}
-              required
-            />
-            
-            <FormInput
-              id="phone"
-              label="Phone Number"
-              value={formData.phone}
-              onChange={handleInputChange}
-              error={errors.phone}
-              placeholder="10-digit mobile number"
-              required
-            />
-            
-            <FormInput
-              id="dateOfBirth"
-              label="Date of Birth"
-              type="date"
-              value={formData.dateOfBirth}
-              onChange={handleInputChange}
-              error={errors.dateOfBirth}
-              required
-            />
-            
-            <FormInput
-              id="aadhaarNumber"
-              label="Aadhaar Number"
-              value={formData.aadhaarNumber}
-              onChange={handleInputChange}
-              error={errors.aadhaarNumber}
-              placeholder="12-digit Aadhaar number"
-              required
-            />
-            
-            <FormInput
-              id="addressLine1"
-              label="Address Line 1"
-              value={formData.addressLine1}
-              onChange={handleInputChange}
-              error={errors.addressLine1}
-              required
-            />
-            
-            <div className="grid grid-cols-2 gap-4">
-              <FormInput
-                id="city"
-                label="City"
-                value={formData.city}
-                onChange={handleInputChange}
-                error={errors.city}
-                required
-              />
-              
-              <FormInput
-                id="state"
-                label="State"
-                value={formData.state}
-                onChange={handleInputChange}
-                error={errors.state}
-                required
-              />
-            </div>
-            
-            <FormInput
-              id="pinCode"
-              label="PIN Code"
-              value={formData.pinCode}
-              onChange={handleInputChange}
-              error={errors.pinCode}
-              placeholder="6-digit PIN code"
-              required
-            />
-            
-            <FormInput
-              id="branchName"
-              label="Bank Branch Name"
-              value={formData.branchName}
-              onChange={handleInputChange}
-              error={errors.branchName}
-              required
-            />
-            
-            <FormInput
-              id="ifscCode"
-              label="IFSC Code"
-              value={formData.ifscCode}
-              onChange={handleInputChange}
-              error={errors.ifscCode}
-              placeholder="e.g., SBIN0000123"
-              required
-            />
-            
-            {errors.submit && (
-              <div className="text-red-600 text-sm mt-2">
-                {errors.submit}
-              </div>
-            )}
-            
-            <div>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 ${
-                  isSubmitting ? 'opacity-75 cursor-not-allowed' : 'hover:bg-blue-700'
-                }`}
-              >
-                {isSubmitting ? (
-                  <span className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Registering...
-                  </span>
-                ) : (
-                  'Register'
-                )}
-              </button>
-            </div>
-            
-            <p className="text-sm text-gray-600 mt-4">
-              Note: Your registration will need to be approved by an admin before you can access the employee dashboard.
-            </p>
-          </form>
-        ) : (
-          <p className="text-center text-sm text-gray-600">
-            Please connect your wallet to register.
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            Employee Registration
+          </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            Please fill in your details to complete the registration
           </p>
-        )}
+        </div>
+        
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <div className="rounded-md shadow-sm -space-y-px">
+            <div>
+              <label htmlFor="name" className="sr-only">Full Name</label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                placeholder="Full Name"
+                value={formData.name}
+                onChange={handleChange}
+              />
+              {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="email" className="sr-only">Email address</label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                placeholder="Email address"
+                value={formData.email}
+                onChange={handleChange}
+              />
+              {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="phoneNumber" className="sr-only">Phone Number</label>
+              <input
+                id="phoneNumber"
+                name="phoneNumber"
+                type="text"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                placeholder="Phone Number"
+                value={formData.phoneNumber}
+                onChange={handleChange}
+              />
+              {errors.phoneNumber && <p className="mt-1 text-sm text-red-600">{errors.phoneNumber}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="address" className="sr-only">Address</label>
+              <input
+                id="address"
+                name="address"
+                type="text"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                placeholder="Address"
+                value={formData.address}
+                onChange={handleChange}
+              />
+              {errors.address && <p className="mt-1 text-sm text-red-600">{errors.address}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="documentType" className="sr-only">Document Type</label>
+              <select
+                id="documentType"
+                name="documentType"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                value={formData.documentType}
+                onChange={handleChange}
+              >
+                <option value="AADHAAR">AADHAAR</option>
+                <option value="PAN">PAN</option>
+                <option value="VOTER_ID">Voter ID</option>
+                <option value="DRIVING_LICENSE">Driving License</option>
+                <option value="PASSPORT">Passport</option>
+              </select>
+              {errors.documentType && <p className="mt-1 text-sm text-red-600">{errors.documentType}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="documentNumber" className="sr-only">Document Number</label>
+              <input
+                id="documentNumber"
+                name="documentNumber"
+                type="text"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                placeholder="Document Number"
+                value={formData.documentNumber}
+                onChange={handleChange}
+              />
+              {errors.documentNumber && <p className="mt-1 text-sm text-red-600">{errors.documentNumber}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="pinCode" className="sr-only">PIN Code</label>
+              <input
+                id="pinCode"
+                name="pinCode"
+                type="text"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                placeholder="PIN Code"
+                value={formData.pinCode}
+                onChange={handleChange}
+              />
+              {errors.pinCode && <p className="mt-1 text-sm text-red-600">{errors.pinCode}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="ifscCode" className="sr-only">IFSC Code</label>
+              <input
+                id="ifscCode"
+                name="ifscCode"
+                type="text"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                placeholder="IFSC Code"
+                value={formData.ifscCode}
+                onChange={handleChange}
+              />
+              {errors.ifscCode && <p className="mt-1 text-sm text-red-600">{errors.ifscCode}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="bankAccountNumber" className="sr-only">Bank Account Number</label>
+              <input
+                id="bankAccountNumber"
+                name="bankAccountNumber"
+                type="text"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                placeholder="Bank Account Number"
+                value={formData.bankAccountNumber}
+                onChange={handleChange}
+              />
+              {errors.bankAccountNumber && <p className="mt-1 text-sm text-red-600">{errors.bankAccountNumber}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="department" className="sr-only">Department</label>
+              <input
+                id="department"
+                name="department"
+                type="text"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                placeholder="Department"
+                value={formData.department}
+                onChange={handleChange}
+              />
+              {errors.department && <p className="mt-1 text-sm text-red-600">{errors.department}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="position" className="sr-only">Position</label>
+              <input
+                id="position"
+                name="position"
+                type="text"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                placeholder="Position"
+                value={formData.position}
+                onChange={handleChange}
+              />
+              {errors.position && <p className="mt-1 text-sm text-red-600">{errors.position}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="employeeId" className="sr-only">Employee ID</label>
+              <input
+                id="employeeId"
+                name="employeeId"
+                type="text"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                placeholder="Employee ID"
+                value={formData.employeeId}
+                onChange={handleChange}
+              />
+              {errors.employeeId && <p className="mt-1 text-sm text-red-600">{errors.employeeId}</p>}
+            </div>
+          </div>
+
+          {errors.submit && (
+            <div className="rounded-md bg-red-50 p-4">
+              <div className="flex">
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800">
+                    {errors.submit}
+                  </h3>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div>
+            <button
+              type="submit"
+              disabled={isSubmitting || isAddingEmployee || isSubmittingKYC}
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+            >
+              {isSubmitting || isAddingEmployee || isSubmittingKYC ? 'Processing...' : 'Submit Registration'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

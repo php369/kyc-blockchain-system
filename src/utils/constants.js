@@ -40,21 +40,482 @@ export const ROLES = {
   };
   
   // Contract information for Sepolia testnet
-  export const CONTRACT_ADDRESS = "0xB90f80C1d23014418eeFcE5CDB41EBBd356aA5f4"; // Replace with your deployed contract address
+  export const CONTRACT_ADDRESS = "0xd2a5bC10698FD955D1Fe6cb468a17809A08fd005"; // Replace with your deployed contract address
   
   // Contract ABI
-  export const CONTRACT_ABI = [
-    // Add your contract ABI here
-    // Example:
-    {
-      "inputs": [],
-      "name": "getUserRole",
-      "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    // Add other contract functions here
-  ];
+  export const CONTRACT_ABI =[
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "newHash",
+				"type": "string"
+			}
+		],
+		"name": "IPFSUpdated",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "applicant",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "reason",
+				"type": "string"
+			}
+		],
+		"name": "KYCRejected",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "applicant",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "reverifiedBy",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "expiryDate",
+				"type": "uint256"
+			}
+		],
+		"name": "KYCReverified",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "applicant",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "ipfsHash",
+				"type": "string"
+			}
+		],
+		"name": "KYCSubmitted",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "applicant",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "verifiedBy",
+				"type": "address"
+			}
+		],
+		"name": "KYCVerified",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint8",
+				"name": "role",
+				"type": "uint8"
+			}
+		],
+		"name": "UserAdded",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_user",
+				"type": "address"
+			}
+		],
+		"name": "addAdmin",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_user",
+				"type": "address"
+			},
+			{
+				"internalType": "string",
+				"name": "_ifsc",
+				"type": "string"
+			}
+		],
+		"name": "addBankEmployee",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_user",
+				"type": "address"
+			}
+		],
+		"name": "addCustomer",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "admin",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_applicant",
+				"type": "address"
+			}
+		],
+		"name": "checkExpiry",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_ifsc",
+				"type": "string"
+			}
+		],
+		"name": "getIFSCEmployees",
+		"outputs": [
+			{
+				"internalType": "address[]",
+				"name": "",
+				"type": "address[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_applicant",
+				"type": "address"
+			}
+		],
+		"name": "getKYCDetails",
+		"outputs": [
+			{
+				"internalType": "enum DigitalKYC.KYCStatus",
+				"name": "status",
+				"type": "uint8"
+			},
+			{
+				"internalType": "string",
+				"name": "ipfsHash",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "expiry",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_userAddress",
+				"type": "address"
+			}
+		],
+		"name": "getUserRole",
+		"outputs": [
+			{
+				"internalType": "uint8",
+				"name": "",
+				"type": "uint8"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "ifscEmployees",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "ipfsDocumentMap",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "kycExpiryDuration",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "kycRecords",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "applicant",
+				"type": "address"
+			},
+			{
+				"internalType": "string",
+				"name": "ipfsHash",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "ifscCode",
+				"type": "string"
+			},
+			{
+				"internalType": "enum DigitalKYC.KYCStatus",
+				"name": "status",
+				"type": "uint8"
+			},
+			{
+				"internalType": "uint256",
+				"name": "submissionDate",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "expiryDate",
+				"type": "uint256"
+			},
+			{
+				"internalType": "string",
+				"name": "rejectionReason",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_applicant",
+				"type": "address"
+			},
+			{
+				"internalType": "string",
+				"name": "_reason",
+				"type": "string"
+			}
+		],
+		"name": "rejectKYC",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_applicant",
+				"type": "address"
+			}
+		],
+		"name": "reverifyKYC",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_ipfsHash",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "_ifscCode",
+				"type": "string"
+			}
+		],
+		"name": "submitKYC",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_newHash",
+				"type": "string"
+			}
+		],
+		"name": "updateIPFSHash",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "users",
+		"outputs": [
+			{
+				"internalType": "uint8",
+				"name": "role",
+				"type": "uint8"
+			},
+			{
+				"internalType": "string",
+				"name": "ifscCode",
+				"type": "string"
+			},
+			{
+				"internalType": "bool",
+				"name": "isActive",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_applicant",
+				"type": "address"
+			}
+		],
+		"name": "verifyKYC",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	}
+];
   
   // IPFS gateway URL for retrieving documents
   export const IPFS_GATEWAY_URL = "https://gateway.ipfscdn.io/ipfs/";
@@ -97,17 +558,17 @@ export const ROLES = {
   
   // Form validation error messages
   export const ERROR_MESSAGES = {
-    WALLET_ADDRESS: "Invalid wallet address format",
-    NAME_REQUIRED: "Name is required",
-    EMAIL_INVALID: "Invalid email address",
-    PHONE_INVALID: "Invalid Indian phone number",
-    DOB_REQUIRED: "Date of birth is required",
-    AADHAAR_INVALID: "Invalid Aadhaar number",
-    ADDRESS_REQUIRED: "Address Line 1 is required",
-    CITY_REQUIRED: "City is required",
-    STATE_REQUIRED: "State is required",
-    PIN_INVALID: "Invalid PIN code",
-    IFSC_INVALID: "Invalid IFSC code",
-    BRANCH_REQUIRED: "Branch name is required",
-    DOCUMENT_REQUIRED: "Document is required"
+    WALLET_ADDRESS: "Please enter a valid wallet address",
+    NAME_REQUIRED: "Please enter your name",
+    EMAIL_INVALID: "Please enter a valid email address",
+    PHONE_INVALID: "Please enter a valid phone number",
+    DOB_REQUIRED: "Please enter your date of birth",
+    AADHAAR_INVALID: "Please enter your Aadhaar number",
+    ADDRESS_REQUIRED: "Please enter your address",
+    CITY_REQUIRED: "Please enter your city",
+    STATE_REQUIRED: "Please enter your state",
+    PIN_INVALID: "Please enter your PIN code",
+    IFSC_INVALID: "Please enter your bank's IFSC code",
+    BRANCH_REQUIRED: "Please enter your branch name",
+    DOCUMENT_REQUIRED: "Please upload your document"
   };

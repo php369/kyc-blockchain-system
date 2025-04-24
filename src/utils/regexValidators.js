@@ -5,20 +5,35 @@ export const isValidWalletAddress = (address) => {
 
 export const isValidEmail = (email) => {
   if (!email) return false;
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  return email.includes('@') && email.includes('.');
 };
 
 export const isValidPhoneNumber = (phone) => {
   if (!phone) return false;
-  return /^\+?[1-9]\d{1,14}$/.test(phone);
+  return phone.length >= 10;
 };
 
 export const isValidName = (name) => {
   if (!name) return false;
-  return /^[a-zA-Z\s]{2,50}$/.test(name);
+  return name.trim().length >= 2;
 };
 
 export const isValidDocumentNumber = (number) => {
   if (!number) return false;
-  return /^[A-Za-z0-9]{5,20}$/.test(number);
+  return number.length >= 5;
+};
+
+export const isValidPinCode = (pin) => {
+  if (!pin) return false;
+  return pin.length >= 6;
+};
+
+export const isValidAadhaar = (aadhaar) => {
+  if (!aadhaar) return false;
+  return aadhaar.length >= 12;
+};
+
+export const isValidIFSC = (ifsc) => {
+  if (!ifsc) return false;
+  return ifsc.length >= 11;
 };

@@ -1,4 +1,4 @@
-import Spline from '@splinetool/react-spline/next';
+//import Spline from '@splinetool/react-spline/next';
 import Navbar from '../components/Navbar.js'; // Import the Navbar
 
 export default function Home() {
@@ -7,10 +7,7 @@ export default function Home() {
       {/* Navbar */}
       <Navbar />
 
-      <Spline
-        scene="https://prod.spline.design/xb5fd9wZ5bONCsIW/scene.splinecode" 
-      />
-
+      
       <section id="features" style={{ padding: '4rem 2rem', backgroundColor: '#111' }}>
         <h2 style={{ fontSize: '2rem', textAlign: 'center', marginBottom: '2rem' }}>Key Features</h2>
         <div style={{

@@ -17,24 +17,43 @@ export function WalletProvider({ children }) {
 
   const verifyUserRole = async (userAddress) => {
     try {
-      if (!contract) {
-        throw new Error('Contract not initialized');
+      if (!contract || !readContract) {
+        console.log('Contract not initialized yet');
+        return false;
+      }
+
+      // Check if the contract is properly initialized
+      if (!contract.address || !readContract.address) {
+        console.log('Contract address not set');
+        return false;
       }
 
       const { data: role, error } = await readContract('getUserRole', [userAddress]);
       
       if (error) {
-        throw new Error(error);
+        console.error('Error reading user role:', error);
+        return false;
       }
 
-      if (role && role > 0) {
-        setUserRole(Number(role));
+      // Handle the case where role is undefined or null
+      if (role === undefined || role === null) {
+        console.log('No role found for user');
+        setUserRole(null);
+        return false;
+      }
+
+      // Convert role to number and check if it's valid
+      const roleNumber = Number(role);
+      if (roleNumber > 0) {
+        setUserRole(roleNumber);
         return true;
       }
+      
+      setUserRole(null);
       return false;
     } catch (error) {
       console.error('Error verifying user role:', error);
-      setError(error.message);
+      setUserRole(null);
       return false;
     }
   };
@@ -51,8 +70,10 @@ export function WalletProvider({ children }) {
             setAddress(userAddress);
             setIsConnected(true);
             
-            // Verify user role
-            await verifyUserRole(userAddress);
+            // Only verify role if contract is initialized
+            if (contract && readContract && contract.address && readContract.address) {
+              await verifyUserRole(userAddress);
+            }
           }
         } catch (error) {
           console.error('Error checking connection:', error);
@@ -72,8 +93,10 @@ export function WalletProvider({ children }) {
           setAddress(userAddress);
           setIsConnected(true);
           
-          // Verify user role
-          await verifyUserRole(userAddress);
+          // Only verify role if contract is initialized
+          if (contract && readContract && contract.address && readContract.address) {
+            await verifyUserRole(userAddress);
+          }
         } else {
           setAddress(null);
           setIsConnected(false);
@@ -92,7 +115,7 @@ export function WalletProvider({ children }) {
         window.ethereum.removeAllListeners('chainChanged');
       }
     };
-  }, [contract]);
+  }, [contract, readContract]);
 
   const connectWallet = async () => {
     try {
@@ -101,14 +124,15 @@ export function WalletProvider({ children }) {
       }
 
       const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const accounts = await provider.send('eth_requestAccounts', []);
-      
-      if (accounts.length > 0) {
-        const userAddress = accounts[0];
-        setAddress(userAddress);
-        setIsConnected(true);
-        
-        // Verify user role
+      await provider.send('eth_requestAccounts', []);
+      const signer = provider.getSigner();
+      const userAddress = await signer.getAddress();
+
+      setAddress(userAddress);
+      setIsConnected(true);
+
+      // Only verify role if contract is initialized
+      if (contract && readContract && contract.address && readContract.address) {
         await verifyUserRole(userAddress);
       }
     } catch (error) {
@@ -121,31 +145,29 @@ export function WalletProvider({ children }) {
     setAddress(null);
     setIsConnected(false);
     setUserRole(null);
+    setError(null);
   };
-
-  const isAuthenticated = isConnected && userRole !== null && userRole > 0;
-  const isCustomer = isAuthenticated && userRole === ROLES.CUSTOMER;
-  const isEmployee = isAuthenticated && userRole === ROLES.EMPLOYEE;
-  const isAdmin = isAuthenticated && userRole === ROLES.ADMIN;
 
   const value = {
     address,
-    isConnected,
     userRole,
     isLoading,
-    error: error || contractError,
-    isAuthenticated,
-    isCustomer,
-    isEmployee,
-    isAdmin,
+    error,
+    isConnected,
     connectWallet,
     disconnectWallet,
+    isAdmin: userRole === ROLES.ADMIN,
+    isEmployee: userRole === ROLES.EMPLOYEE,
+    isCustomer: userRole === ROLES.CUSTOMER
   };
 
-  return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
+  return (
+    <WalletContext.Provider value={value}>
+      {children}
+    </WalletContext.Provider>
+  );
 }
 
-// Custom hook to use the wallet context
 export function useWallet() {
   const context = useContext(WalletContext);
   if (context === undefined) {
