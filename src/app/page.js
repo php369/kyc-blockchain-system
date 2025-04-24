@@ -1,103 +1,113 @@
-import Image from "next/image";
+import Spline from '@splinetool/react-spline/next';
+import Navbar from '../components/Navbar.js'; // Import the Navbar
 
 export default function Home() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.js
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <main style={{ height: "100vh", width: "100vw", overflowX: "hidden" }}>
+      {/* Navbar */}
+      <Navbar />
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+      <Spline
+        scene="https://prod.spline.design/xb5fd9wZ5bONCsIW/scene.splinecode" 
+      />
+
+      {/* Features Section */}
+      <section id="features" style={{ padding: '4rem 2rem', backgroundColor: '#111' }}>
+        <h2 style={{ fontSize: '2rem', textAlign: 'center', marginBottom: '2rem' }}>Key Features</h2>
+        <div style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          justifyContent: 'space-around',
+          gap: '2rem',
+          maxWidth: '1200px',
+          margin: '0 auto'
+        }}>
+          <FeatureBlock
+            title="Secure Verification"
+            description="End-to-end encrypted document verification with multi-layer security."
+          />
+          <FeatureBlock
+            title="Blockchain Technology"
+            description="Immutable record-keeping using Ethereum blockchain technology."
+          />
+          <FeatureBlock
+            title="Decentralized Storage"
+            description="Documents stored on IPFS for secure and distributed access."
+          />
+          <FeatureBlock
+            title="Transparent Auditing"
+            description="Complete audit trail of all verification activities."
+          />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+      </section>
+
+      {/* How It Works Section */}
+      <section id="howitworks" style={{ padding: '4rem 2rem', backgroundColor: '#000' }}>
+        <h2 style={{ fontSize: '2rem', textAlign: 'center', marginBottom: '2rem' }}>How It Works</h2>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-around',
+          flexWrap: 'wrap',
+          maxWidth: '1000px',
+          margin: '0 auto',
+          gap: '2rem'
+        }}>
+          <StepBlock number={1} title="Register to Connect Wallet" description="Connect your Ethereum wallet to create a secure blockchain identity." />
+          <StepBlock number={2} title="Submit Documents" description="Upload your Aadhaar card and other required documents for verification." />
+          <StepBlock number={3} title="Get Verified" description="Bank employees verify your documents and update your KYC status on the blockchain." />
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer style={{ width: "100%", padding: "1rem", background: "#111", textAlign: "center" }}>
+        <p>© 2025 KYC Blockchain System</p>
       </footer>
+    </main>
+  );
+}
+// Feature Block
+function FeatureBlock({ title, description }) {
+  return (
+    <div style={{
+      backgroundColor: '#1a1a1a',
+      borderRadius: '12px',
+      padding: '1.5rem',
+      flex: '1 1 250px',
+      textAlign: 'center',
+      boxShadow: '0 0 10px rgba(255,255,255,0.05)'
+    }}>
+      <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>{title}</h3>
+      <p style={{ color: '#ccc', fontSize: '0.95rem' }}>{description}</p>
+    </div>
+  );
+}
+
+// Step Block with Number
+function StepBlock({ number, title, description }) {
+  return (
+    <div style={{
+      backgroundColor: '#1a1a1a',
+      borderRadius: '12px',
+      padding: '1.5rem',
+      flex: '1 1 280px',
+      textAlign: 'center',
+      boxShadow: '0 0 10px rgba(255,255,255,0.05)'
+    }}>
+      <div style={{
+        width: '40px',
+        height: '40px',
+        borderRadius: '50%',
+        backgroundColor: '#00e676',
+        color: '#000',
+        fontWeight: 'bold',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        margin: '0 auto 1rem auto',
+        fontSize: '1.2rem'
+      }}>{number}</div>
+      <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>{title}</h3>
+      <p style={{ color: '#ccc', fontSize: '0.95rem' }}>{description}</p>
     </div>
   );
 }
