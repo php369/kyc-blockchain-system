@@ -2,16 +2,16 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAddress, useContract, useContractWrite } from '@thirdweb-dev/react';
+import { useWallet, useContractContext } from '../../context';
 import FormInput from '../FormInput';
 import WalletConnectButton from '../WalletConnectButton';
-import { CONTRACT_ADDRESS, ERROR_MESSAGES } from '../../utils/constants';
+import { ERROR_MESSAGES } from '../../utils/constants';
 import { isValidEmail, isValidIndianPhone, isValidAadhaar, isValidPinCode, isValidIFSC } from '../../utils/regexValidators';
 
 export default function EmployeeRegistrationForm() {
   const router = useRouter();
-  const address = useAddress();
-  const { contract } = useContract(CONTRACT_ADDRESS);
+  const { address, isConnected } = useWallet();
+  const { writeContract } = useContractContext();
   
   const [formData, setFormData] = useState({
     name: '',
@@ -29,9 +29,6 @@ export default function EmployeeRegistrationForm() {
   
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Contract write hook
-  const { mutateAsync: addBankEmployee } = useContractWrite(contract, "addBankEmployee");
   
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -68,7 +65,7 @@ export default function EmployeeRegistrationForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!address) {
+    if (!isConnected) {
       alert("Please connect your wallet first");
       return;
     }
@@ -81,7 +78,11 @@ export default function EmployeeRegistrationForm() {
       setIsSubmitting(true);
       
       // Call contract to register employee
-      await addBankEmployee({ args: [address, formData.ifscCode] });
+      const { result, error } = await writeContract('addBankEmployee', [address, formData.ifscCode]);
+      
+      if (error) {
+        throw new Error(error);
+      }
       
       // Redirect to login page after successful registration
       router.push('/login?registration=success');

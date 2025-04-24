@@ -1,79 +1,147 @@
 'use client';
 
 import { createContext, useState, useEffect, useContext } from 'react';
-import { useAddress, useDisconnect, useConnectionStatus, useContract, useContractRead } from '@thirdweb-dev/react';
-import { CONTRACT_ADDRESS, ROLES } from '../utils/constants';
+import { ethers } from 'ethers';
+import { ROLES } from '../utils/constants';
+import { useContractContext } from './ContractContext';
 
-// Create context
 const WalletContext = createContext();
 
 export function WalletProvider({ children }) {
-  const address = useAddress();
-  const disconnect = useDisconnect();
-  const connectionStatus = useConnectionStatus();
+  const [address, setAddress] = useState(null);
   const [userRole, setUserRole] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  
-  // Get contract instance
-  const { contract } = useContract(CONTRACT_ADDRESS);
-  
-  // Fetch user role when wallet is connected
-  const { data: roleData, isLoading: roleLoading, error: roleError } = useContractRead(
-    contract,
-    "getUserRole",
-    address ? [address] : undefined,
-    {
-      enabled: !!address && !!contract,
+  const [isConnected, setIsConnected] = useState(false);
+  const { contract, readContract, error: contractError } = useContractContext();
+
+  const verifyUserRole = async (userAddress) => {
+    try {
+      if (!contract) {
+        throw new Error('Contract not initialized');
+      }
+
+      const { data: role, error } = await readContract('getUserRole', [userAddress]);
+      
+      if (error) {
+        throw new Error(error);
+      }
+
+      if (role && role > 0) {
+        setUserRole(Number(role));
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error verifying user role:', error);
+      setError(error.message);
+      return false;
     }
-  );
-  
+  };
+
   useEffect(() => {
-    if (!address) {
-      setUserRole(null);
+    const checkConnection = async () => {
+      if (window.ethereum) {
+        try {
+          const provider = new ethers.providers.Web3Provider(window.ethereum);
+          const accounts = await provider.listAccounts();
+          
+          if (accounts.length > 0) {
+            const userAddress = accounts[0];
+            setAddress(userAddress);
+            setIsConnected(true);
+            
+            // Verify user role
+            await verifyUserRole(userAddress);
+          }
+        } catch (error) {
+          console.error('Error checking connection:', error);
+          setError(error.message);
+        }
+      }
       setIsLoading(false);
-      return;
+    };
+
+    checkConnection();
+
+    // Listen for account changes
+    if (window.ethereum) {
+      window.ethereum.on('accountsChanged', async (accounts) => {
+        if (accounts.length > 0) {
+          const userAddress = accounts[0];
+          setAddress(userAddress);
+          setIsConnected(true);
+          
+          // Verify user role
+          await verifyUserRole(userAddress);
+        } else {
+          setAddress(null);
+          setIsConnected(false);
+          setUserRole(null);
+        }
+      });
+
+      window.ethereum.on('chainChanged', () => {
+        window.location.reload();
+      });
     }
-    
-    if (roleData !== undefined) {
-      // Convert BigNumber to number if needed
-      const role = typeof roleData === 'object' && roleData._isBigNumber 
-        ? roleData.toNumber() 
-        : Number(roleData);
+
+    return () => {
+      if (window.ethereum) {
+        window.ethereum.removeAllListeners('accountsChanged');
+        window.ethereum.removeAllListeners('chainChanged');
+      }
+    };
+  }, [contract]);
+
+  const connectWallet = async () => {
+    try {
+      if (!window.ethereum) {
+        throw new Error('MetaMask is not installed');
+      }
+
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const accounts = await provider.send('eth_requestAccounts', []);
+      
+      if (accounts.length > 0) {
+        const userAddress = accounts[0];
+        setAddress(userAddress);
+        setIsConnected(true);
         
-      setUserRole(role);
-      setIsLoading(false);
-    } else if (roleError) {
-      console.error("Error fetching user role:", roleError);
-      setError("Failed to fetch user role. Please try again.");
-      setIsLoading(false);
+        // Verify user role
+        await verifyUserRole(userAddress);
+      }
+    } catch (error) {
+      console.error('Error connecting wallet:', error);
+      setError(error.message);
     }
-  }, [address, roleData, roleError]);
-  
-  const isAuthenticated = !!address && userRole !== null && userRole > 0;
-  
+  };
+
+  const disconnectWallet = () => {
+    setAddress(null);
+    setIsConnected(false);
+    setUserRole(null);
+  };
+
+  const isAuthenticated = isConnected && userRole !== null && userRole > 0;
   const isCustomer = isAuthenticated && userRole === ROLES.CUSTOMER;
   const isEmployee = isAuthenticated && userRole === ROLES.EMPLOYEE;
   const isAdmin = isAuthenticated && userRole === ROLES.ADMIN;
-  
-  const logoutWallet = () => {
-    disconnect();
-    setUserRole(null);
-  };
-  
+
   const value = {
     address,
-    connectionStatus,
+    isConnected,
     userRole,
     isLoading,
-    error,
+    error: error || contractError,
     isAuthenticated,
     isCustomer,
     isEmployee,
     isAdmin,
-    logoutWallet,
+    connectWallet,
+    disconnectWallet,
   };
-  
+
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
 }
 

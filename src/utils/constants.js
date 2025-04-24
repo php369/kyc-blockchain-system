@@ -40,7 +40,21 @@ export const ROLES = {
   };
   
   // Contract information for Sepolia testnet
-  export const CONTRACT_ADDRESS = "0x..."; // Replace with actual deployed contract address
+  export const CONTRACT_ADDRESS = "0xB90f80C1d23014418eeFcE5CDB41EBBd356aA5f4"; // Replace with your deployed contract address
+  
+  // Contract ABI
+  export const CONTRACT_ABI = [
+    // Add your contract ABI here
+    // Example:
+    {
+      "inputs": [],
+      "name": "getUserRole",
+      "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    // Add other contract functions here
+  ];
   
   // IPFS gateway URL for retrieving documents
   export const IPFS_GATEWAY_URL = "https://gateway.ipfscdn.io/ipfs/";
@@ -48,13 +62,13 @@ export const ROLES = {
   // Blockchain Network Information
   export const BLOCKCHAIN_CONFIG = {
     chainId: 11155111, // Sepolia testnet
-    chainName: "Sepolia Test Network",
+    chainName: "Sepolia",
     nativeCurrency: {
-      name: "Sepolia Ether",
-      symbol: "SEP",
+      name: "Sepolia ETH",
+      symbol: "ETH",
       decimals: 18
     },
-    rpcUrls: ["https://sepolia.infura.io/v3/YOUR_INFURA_KEY"], // Replace with actual RPC URL
+    rpcUrls: ["https://sepolia.infura.io/v3/"],
     blockExplorerUrls: ["https://sepolia.etherscan.io"]
   };
   

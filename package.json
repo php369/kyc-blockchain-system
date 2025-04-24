@@ -9,19 +9,19 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@splinetool/react-spline": "^4.0.0",
-    "@thirdweb-dev/react": "^4.9.4",
-    "@thirdweb-dev/sdk": "^4.0.99",
-    "lucide-react": "^0.488.0",
-    "next": "15.3.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "@tailwindcss/cli": "^4.1.4",
+    "@tailwindcss/postcss": "^4.1.4",
+    "ethers": "^5.7.2",
+    "lucide-react": "^0.503.0",
+    "next": "14.1.0",
+    "react": "^18",
+    "react-dom": "^18"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3",
-    "@tailwindcss/postcss": "^4",
-    "eslint": "^9",
-    "eslint-config-next": "15.3.0",
-    "tailwindcss": "^4"
+    "autoprefixer": "^10.0.1",
+    "eslint": "^8",
+    "eslint-config-next": "14.1.0",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.17"
   }
 }

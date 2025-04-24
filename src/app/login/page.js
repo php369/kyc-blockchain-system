@@ -5,14 +5,16 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import WalletConnectButton from '../../components/WalletConnectButton';
 import { useWallet } from '../../context/WalletContext';
+import { useContractContext } from '../../context/ContractContext';
 
 export default function LoginPage() {
   const { isAuthenticated, isLoading, userRole, error } = useWallet();
+  const { isLoading: isContractLoading, error: contractError, network } = useContractContext();
   const router = useRouter();
   const [isRedirecting, setIsRedirecting] = useState(false);
   
   useEffect(() => {
-    if (isAuthenticated && !isLoading && !isRedirecting) {
+    if (isAuthenticated && !isLoading && !isContractLoading && !isRedirecting) {
       setIsRedirecting(true);
       
       // Redirect to appropriate dashboard based on role
@@ -24,7 +26,9 @@ export default function LoginPage() {
         router.push('/dashboard/admin');
       }
     }
-  }, [isAuthenticated, isLoading, userRole, router, isRedirecting]);
+  }, [isAuthenticated, isLoading, isContractLoading, userRole, router, isRedirecting]);
+  
+  const displayError = error || contractError;
   
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
@@ -44,15 +48,15 @@ export default function LoginPage() {
               <div className="flex flex-col items-center justify-center space-y-4">
                 <WalletConnectButton />
                 
-                {isLoading && (
+                {(isLoading || isContractLoading) && (
                   <div className="flex justify-center mt-4">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900 dark:border-white"></div>
                   </div>
                 )}
                 
-                {error && (
+                {displayError && (
                   <div className="mt-4 text-sm text-red-600 dark:text-red-400">
-                    {error}
+                    {displayError}
                   </div>
                 )}
                 

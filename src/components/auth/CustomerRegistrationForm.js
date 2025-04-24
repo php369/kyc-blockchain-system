@@ -2,16 +2,16 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAddress, useContract, useContractWrite } from '@thirdweb-dev/react';
+import { useWallet, useContractContext } from '../../context';
 import FormInput from '../FormInput';
 import WalletConnectButton from '../WalletConnectButton';
-import { CONTRACT_ADDRESS, ERROR_MESSAGES } from '../../utils/constants';
+import { ERROR_MESSAGES } from '../../utils/constants';
 import { isValidEmail, isValidIndianPhone, isValidAadhaar, isValidPinCode } from '../../utils/regexValidators';
 
 export default function CustomerRegistrationForm() {
   const router = useRouter();
-  const address = useAddress();
-  const { contract } = useContract(CONTRACT_ADDRESS);
+  const { address, isConnected } = useWallet();
+  const { writeContract } = useContractContext();
   
   const [formData, setFormData] = useState({
     name: '',
@@ -27,9 +27,6 @@ export default function CustomerRegistrationForm() {
   
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Contract write hook
-  const { mutateAsync: addCustomer } = useContractWrite(contract, "addCustomer");
   
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -62,7 +59,7 @@ export default function CustomerRegistrationForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!address) {
+    if (!isConnected) {
       alert("Please connect your wallet first");
       return;
     }
@@ -75,7 +72,11 @@ export default function CustomerRegistrationForm() {
       setIsSubmitting(true);
       
       // Call contract to register customer
-      await addCustomer({ args: [address] });
+      const { result, error } = await writeContract('addCustomer', [address]);
+      
+      if (error) {
+        throw new Error(error);
+      }
       
       // Redirect to login page after successful registration
       router.push('/login?registration=success');
@@ -101,7 +102,7 @@ export default function CustomerRegistrationForm() {
           </div>
         </div>
         
-        {address ? (
+        {isConnected ? (
           <form onSubmit={handleSubmit} className="space-y-6">
             <FormInput
               id="name"

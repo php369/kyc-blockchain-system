@@ -1,14 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useContract, useContractRead } from '@thirdweb-dev/react';
-import { CONTRACT_ADDRESS, KYC_STATUS, KYC_STATUS_NAMES } from '../../utils/constants';
-import { useWallet } from '../../context/WalletContext';
+import { KYC_STATUS, KYC_STATUS_NAMES } from '../../utils/constants';
+import { useWallet, useContractContext } from '../../context';
 import Link from 'next/link';
 
 export default function KYCStatus({ userAddress }) {
   const { address, isCustomer } = useWallet();
-  const { contract } = useContract(CONTRACT_ADDRESS);
+  const { readContract, writeContract } = useContractContext();
+  const [kycDetails, setKycDetails] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [formattedDate, setFormattedDate] = useState({
     submission: '',
     expiry: ''
@@ -18,48 +20,67 @@ export default function KYCStatus({ userAddress }) {
   const targetAddress = userAddress || address;
   
   // Fetch KYC details
-  const { data: kycDetails, isLoading, error, refetch } = useContractRead(
-    contract,
-    "getKYCDetails",
-    targetAddress ? [targetAddress] : undefined
-  );
-  
   useEffect(() => {
-    if (kycDetails) {
-      // Format dates for display
-      const submissionDate = new Date(Number(kycDetails.submissionDate || 0) * 1000);
-      const expiryDate = new Date(Number(kycDetails.expiry || 0) * 1000);
+    const fetchKYCDetails = async () => {
+      if (!targetAddress) return;
       
-      setFormattedDate({
-        submission: submissionDate.getTime() > 0 
-          ? submissionDate.toLocaleDateString('en-IN', { 
-              day: 'numeric', month: 'short', year: 'numeric' 
-            })
-          : 'N/A',
-        expiry: expiryDate.getTime() > 0 
-          ? expiryDate.toLocaleDateString('en-IN', { 
-              day: 'numeric', month: 'short', year: 'numeric' 
-            })
-          : 'N/A',
-      });
-    }
-  }, [kycDetails]);
+      try {
+        setIsLoading(true);
+        const { data, error } = await readContract('getKYCDetails', [targetAddress]);
+        
+        if (error) {
+          throw new Error(error);
+        }
+        
+        setKycDetails(data);
+        
+        // Format dates for display
+        const submissionDate = new Date(Number(data.submissionDate || 0) * 1000);
+        const expiryDate = new Date(Number(data.expiry || 0) * 1000);
+        
+        setFormattedDate({
+          submission: submissionDate.getTime() > 0 
+            ? submissionDate.toLocaleDateString('en-IN', { 
+                day: 'numeric', month: 'short', year: 'numeric' 
+              })
+            : 'N/A',
+          expiry: expiryDate.getTime() > 0 
+            ? expiryDate.toLocaleDateString('en-IN', { 
+                day: 'numeric', month: 'short', year: 'numeric' 
+              })
+            : 'N/A',
+        });
+      } catch (error) {
+        console.error("Error fetching KYC details:", error);
+        setError(error.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchKYCDetails();
+  }, [targetAddress, readContract]);
   
   // Check if KYC is expired
   useEffect(() => {
-    if (targetAddress && contract) {
-      const checkExpiry = async () => {
-        try {
-          await contract.call("checkExpiry", [targetAddress]);
-          refetch(); // Refresh KYC details after checking expiry
-        } catch (error) {
-          console.error("Error checking KYC expiry:", error);
-        }
-      };
+    const checkExpiry = async () => {
+      if (!targetAddress) return;
       
-      checkExpiry();
-    }
-  }, [targetAddress, contract, refetch]);
+      try {
+        const { error } = await writeContract('checkExpiry', [targetAddress]);
+        if (error) {
+          throw new Error(error);
+        }
+        // Refresh KYC details after checking expiry
+        const { data } = await readContract('getKYCDetails', [targetAddress]);
+        setKycDetails(data);
+      } catch (error) {
+        console.error("Error checking KYC expiry:", error);
+      }
+    };
+    
+    checkExpiry();
+  }, [targetAddress, readContract, writeContract]);
   
   const getStatusColor = (status) => {
     switch (Number(status)) {
@@ -80,6 +101,20 @@ export default function KYCStatus({ userAddress }) {
   
   const getStatusText = (status) => {
     return KYC_STATUS_NAMES[Number(status)] || 'Unknown Status';
+  };
+  
+  const handleDeleteApplication = async () => {
+    try {
+      const { error } = await writeContract('deleteKYCApplication', []);
+      if (error) {
+        throw new Error(error);
+      }
+      // Refresh KYC details after deletion
+      const { data } = await readContract('getKYCDetails', [targetAddress]);
+      setKycDetails(data);
+    } catch (error) {
+      console.error("Error deleting KYC application:", error);
+    }
   };
   
   if (isLoading) {
@@ -183,7 +218,7 @@ export default function KYCStatus({ userAddress }) {
           {(status === KYC_STATUS.PENDING || status === KYC_STATUS.REJECTED) && (
             <button 
               className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-              onClick={() => contract.call("deleteKYCApplication", [])}
+              onClick={handleDeleteApplication}
             >
               Delete Application
             </button>
