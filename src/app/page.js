@@ -11,7 +11,6 @@ export default function Home() {
         scene="https://prod.spline.design/xb5fd9wZ5bONCsIW/scene.splinecode" 
       />
 
-      {/* Features Section */}
       <section id="features" style={{ padding: '4rem 2rem', backgroundColor: '#111' }}>
         <h2 style={{ fontSize: '2rem', textAlign: 'center', marginBottom: '2rem' }}>Key Features</h2>
         <div style={{
